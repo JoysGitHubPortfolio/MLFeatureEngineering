@@ -2,10 +2,11 @@ import cleaner as cl
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 1. Load Data
+# 1. Load & Export Data
 file_path = "data/input/personas_monthly_sample.parquet"
 df = pd.read_parquet(file_path)
 df = cl.clean_df(df)
+df.to_parquet("data/output/personas_cleaned.parquet", index=False)
 
 # 2. Convert Date Columns explicitly
 date_column_names = [c for c in df.columns if 'date' in c]
@@ -39,8 +40,6 @@ print(f"\nFiltered out {len(all_numeric) - len(valid_numeric_cols)} zero-inflate
 top_n = 20
 numeric_df = df[valid_numeric_cols]
 cv = (numeric_df.std() / numeric_df.mean().abs()).sort_values(ascending=False)
-print(f"\nTop {top_n} Features by Relative Dispersion (CV):")
-print(cv.head(top_n))
 
 # 6. Plot conditional distributions (filtering out zeros for plotting)
 for col in cv.head(top_n).index:

@@ -1,0 +1,7 @@
+> Write a Python script named `feature_selection.py` that ingests the cleaned parquet dataset and performs a statistically rigorous feature evaluation tailored specifically to Google's brief on YouTube usage, platform mix, and cross-platform competition.
+> Ensure the analysis adheres to the following criteria:
+> 1. **Data Ingestion & Scope Isolation:** Load the dataset from `data/output/personas_cleaned.parquet`. Exclude metadata columns (`year`, `month`) and isolate the 347 feature numeric variables.
+> 2. **Support Threshold Filtering:** Apply a minimum non-zero support threshold of 1% (`min_support_pct = 0.01`) to filter out extreme zero-inflated features and prevent artificial inflation of dispersion metrics.
+> 3. **Statistical Dispersion Metrics:** Calculate both relative dispersion (Coefficient of Variation, $CV$) and robust dispersion (Interquartile Range, $IQR$) alongside means and standard deviations for all supported features, sorting the output by highest $CV$.
+> 4. **Google Brief Alignment:** Programmatically extract and group subsets for YouTube-specific features, cross-platform transitions (`transitions_`), and time-spend metrics (`time_spent_`).
+> 5. **Statistical Validity Audit:** For a core target like `time_spent_youtube`, calculate the active user base ($N$), the mean, the standard error of the mean, and the 95% confidence interval ($\pm 1.96 \times \text{SEM}$), establishing the rigorous reporting standard required for the take-home write-up.
