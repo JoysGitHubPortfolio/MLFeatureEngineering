@@ -11,49 +11,53 @@ all_numeric = df.select_dtypes(include=["number"]).columns
 meta_cols = ["year", "month"]
 feature_cols = [c for c in all_numeric if c not in meta_cols]
 
-# 3. Apply Minimum Support Threshold (Filter out features with < 1% non-zero support)
+# 3. Apply Minimum Support Threshold (< 1% non-zero support filter)
 min_support_pct = 0.01
 non_zero_rates = (df[feature_cols] > 0).mean()
 supported_cols = non_zero_rates[non_zero_rates >= min_support_pct].index
 
 print(
-    f"Filtered out {len(feature_cols) - len(supported_cols)} zero-inflated features (<{min_support_pct*100}% non-zero support)."
+    f"Filtered out {len(feature_cols) - len(supported_cols)} zero-inflated features (<1% support)."
 )
 
-# 4. Compute Statistical Dispersion Metrics (CV & IQR) for Supported Features
-numeric_df = df[supported_cols]
-metrics = pd.DataFrame(
+# 4. Dedicated YouTube Feature Deep-Dive (Google Brief Focus)
+yt_cols = [c for c in df.columns if "youtube" in c.lower()]
+print(f"\n--- YouTube Feature Space Analysis ({len(yt_cols)} columns) ---")
+
+# Compute rigorous normalised stats specifically for YouTube variables
+yt_metrics = pd.DataFrame(
     {
-        "non_zero_pct": non_zero_rates[supported_cols],
-        "mean": numeric_df.mean(),
-        "std": numeric_df.std(),
-        "cv": numeric_df.std() / numeric_df.mean().abs(),
-        "iqr": numeric_df.quantile(0.75) - numeric_df.quantile(0.25),
+        "non_zero_pct": (df[yt_cols] > 0).mean(),
+        "mean_all": df[yt_cols].mean(),
+        "mean_active": df[yt_cols].apply(
+            lambda x: x[x > 0].mean() if (x > 0).any() else 0
+        ),
+        "std_active": df[yt_cols].apply(
+            lambda x: x[x > 0].std() if (x > 0).sum() > 1 else 0
+        ),
     }
-).sort_values("cv", ascending=False)
+)
+# Normalise standard deviation relative to the mean (Coefficient of Variation)
+yt_metrics["cv_active"] = yt_metrics["std_active"] / yt_metrics["mean_active"].abs()
+yt_metrics = yt_metrics.sort_values("mean_all", ascending=False)
+print("\nTop YouTube Measures by Mean Volume & Normalised Dispersion (CV):")
+print(yt_metrics.head(15))
 
-print("\nTop 20 Supported Features by Relative Dispersion (CV):")
-print(metrics.head(20))
-
-# 5. Extract YouTube & Cross-Platform Focus Areas (Google's Core Brief)
-yt_features = [c for c in df.columns if "youtube" in c.lower()]
-transition_features = [c for c in df.columns if c.startswith("transitions_")]
-time_features = [c for c in df.columns if c.startswith("time_spent_")]
-
-print(f"\n--- Google Brief Feature Scope ---")
-print(f"YouTube-specific features identified: {len(yt_features)}")
-print(f"Transition feature pathways: {len(transition_features)}")
-print(f"Time-spend behavioral metrics: {len(time_features)}")
-
-# Example: Quick statistical validity check for YouTube time spend
-if "time_spent_youtube" in df.columns:
-    yt_active = df[df["time_spent_youtube"] > 0]["time_spent_youtube"]
-    mean_val = yt_active.mean()
-    std_err = yt_active.sem()
+# 5. Statistical Validity Audit for Core YouTube Engagement (`time_spent_youtube`)
+target_col = "time_spent_youtube"
+if target_col in df.columns:
+    yt_active_series = df[df[target_col] > 0][target_col]
+    
+    # Adhering to Sath's rule: checking unique contributors vs person-months if user_id is present
+    base_n = len(yt_active_series)
+    unique_users = df.loc[df[target_col] > 0, "user_id"].nunique() if "user_id" in df.columns else base_n
+    
+    mean_val = yt_active_series.mean()
+    std_err = yt_active_series.sem()
     ci_95 = 1.96 * std_err
-    base_n = len(yt_active)
 
-    print(f"\nStatistical Validity Audit — `time_spent_youtube` (Active Users):")
-    print(f"  - Base (N): {base_n} / {len(df)} total contributor-months")
-    print(f"  - Mean Time Spent: {mean_val:.2f} seconds")
+    print(f"\n=== STATISTICAL VALIDITY AUDIT: `{target_col}` ===")
+    print(f"  - Active Contributor-Months (Base N): {base_n} / {len(df)}")
+    print(f"  - Unique Active Contributors: {unique_users}")
+    print(f"  - Mean Time Spent (Active): {mean_val:.2f} seconds")
     print(f"  - 95% Confidence Interval: ±{ci_95:.2f} seconds")
