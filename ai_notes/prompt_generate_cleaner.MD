@@ -1,5 +1,3 @@
-Here is the prompt formatted in Markdown with bullet points, matching the structural style of the previous prompt:
-
 > Write a Python function named `clean_df` that takes a pandas DataFrame and applies targeted data quality fixes without mutating the original input object.
 > During my initial exploratory data analysis on the 359-column personas dataset, I identified several critical ETL artefacts and pipeline sentinels that are artificially inflating statistical variance (CV) and distorting column means. Specifically, implement the following sanitisation logic:
 > * **Data Type Casting:** Isolate columns containing the substring `'date'` and cast them from string/object types to `datetime64`.
