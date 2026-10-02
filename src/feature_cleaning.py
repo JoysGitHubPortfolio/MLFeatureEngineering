@@ -2,6 +2,7 @@
 import sys
 import pandas as pd
 from pathlib import Path
+from .utils.aggregator import META_COLS, feature_numeric_cols
 from .utils.cleaner import clean_df
 from .utils.plotter import plot_top_cv_distributions
 
@@ -30,8 +31,8 @@ def run_cleaning_pipeline(
     string_cols = df_clean.select_dtypes(include=['string', 'object']).columns
     date_cols = df_clean.select_dtypes(include=['datetime', 'datetime64']).columns
     all_numeric = df_clean.select_dtypes(include=['number']).columns
-    meta_cols = [c for c in ['year', 'month'] if c in all_numeric]
-    feature_numeric_cols = all_numeric.difference(meta_cols)
+    meta_cols = [c for c in META_COLS if c in all_numeric]
+    feature_cols = feature_numeric_cols(df_clean)
 
     if verbose:
         print("\nColumn Type Summary:")
@@ -39,11 +40,11 @@ def run_cleaning_pipeline(
         print(f"String Variables:          {len(string_cols)}")
         print(f"Date Variables:            {len(date_cols)}")
         print(f"Metadata Variables:        {len(meta_cols)}")
-        print(f"Feature Numeric Variables: {len(feature_numeric_cols)}")
+        print(f"Feature Numeric Variables: {len(feature_cols)}")
         print("-" * 35)
         print(
             "Total Accounted:          "
-            f" {len(string_cols) + len(date_cols) + len(meta_cols) + len(feature_numeric_cols)} / {df_clean.shape[1]}"
+            f" {len(string_cols) + len(date_cols) + len(meta_cols) + len(feature_cols)} / {df_clean.shape[1]}"
         )
     return df_clean
 
@@ -55,15 +56,8 @@ if __name__ == "__main__":
     df = run_cleaning_pipeline(verbose=verbose)
 
     # --- 4. DATA SUMMARY & PLOTTING ---
-    all_numeric = df.select_dtypes(include=["number"]).columns
-    meta_cols = [c for c in ["year", "month"] if c in all_numeric]
-    feature_numeric_cols = all_numeric.difference(meta_cols)
-
     # Filter for features with meaningful non-zero proportion
-    min_support_pct = 0.01
-    non_zero_rates = (df[all_numeric] > 0).mean()
-    valid_numeric_cols = non_zero_rates[non_zero_rates >= min_support_pct].index
-    numeric_df = df[valid_numeric_cols]
+    numeric_df = df[feature_numeric_cols(df, min_support_pct=0.01)]
     cv = (numeric_df.std() / numeric_df.mean().abs()).sort_values(ascending=False)
 
     # Call the modular plotter function
